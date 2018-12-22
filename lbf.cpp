@@ -1,4 +1,4 @@
-#include "decode.hpp"
+#include "lbf.hpp"
 
 #define randint(a,b) (rand()%((b)-(a)+1)+(a))
 #define randINT(tab) (tab[randint(0,2)])

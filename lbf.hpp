@@ -12,7 +12,7 @@ int rightShift(int n, int q, int* x, int* result);
 //int** dec_matrix(int* x, int* y);
 
 // Returns the result of H*input without expanding matrix H
-int leftMultiplyByH(int n, int q, int* x, int* y, int* input, int* result);
+int* leftMultiplyByH(int n, int q, int* x, int* y, int* v1, int* v2);
 
 void noiseGen(int n, int q, int* r1, int* r2, int* e);
 
