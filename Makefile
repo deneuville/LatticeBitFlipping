@@ -2,16 +2,16 @@ CXX=g++
 RM=rm -f
 CXXFLAGS=-O3
 
-SRCS=better.cpp
+SRCS=lbf.cpp
 OBJS=$(subst .cpp,.o,$(SRCS))
 
-all: better clean
+all: lbf clean
 
-better: $(OBJS)
-	$(CXX) $(CXXFLAGS) -o better $(OBJS)
+lbf: $(OBJS)
+	$(CXX) $(CXXFLAGS) -o lbf $(OBJS)
 
 clean:
 	$(RM) $(OBJS)
 
 distclean: clean
-	$(RM) better
+	$(RM) lbf
