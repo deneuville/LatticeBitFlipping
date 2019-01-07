@@ -22,6 +22,7 @@ Where the parameters should be:
 1. `D_thr` a threshold for the lattice bit flipping algorithm,
 1. `number_of_lattices` the number of lattices are tried,
 1. `iterations_per_lattice` the number of randomness tried per lattice,
+
 See Tab. 1 of [Ouroboros-E: An efficient lattice-based key-exchange protocol](https://deneuville.github.io/publication/2018-05-08) for more details on the parameters
 
 
