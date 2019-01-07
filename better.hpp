@@ -16,13 +16,13 @@ void leftMultiplyByH(int n, int q, int* x, int* y, int* v1, int* v2, int* result
 
 void noiseGen(int n, int q, int* r1, int* r2, int* e);
 
-int computeSyndrome(int n, int q, int* x, int* y, int* r1, int* r2, int* e, int* result);
+void computeSyndrome(int n, int q, int* x, int* y, int* r1, int* r2, int* e, int* result);
 
 int test(int n, int q, int* e);
 
-int testR1(int n, int* r1, int* result);
+void setR1(int n, int* r1, int* result);
 
-int testR2(int n, int* r2, int* result);
+void setR2(int n, int* r2, int* result);
 
 int decode(int n, int q, int q3, int* x, int* y, int* syndrome, int D_thr, int* r1_tmp, int* r2_tmp, int* p_syndrome, int* r1, int* r2, int* result);
 

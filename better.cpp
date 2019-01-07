@@ -5,6 +5,14 @@
 
 using namespace std;
 
+// Set length-dimensional vector v to zero 
+void reinitialize(int* v, int length)
+{
+	for (int i = 0; i < length; ++i)
+		v[i] = 0;
+}
+
+// print vector c in human readable form (debugging purpose)
 void vectorPrint(int n, int* v)
 {
 	cout << "(";
@@ -13,9 +21,11 @@ void vectorPrint(int n, int* v)
 	cout << v[n-1] << ")\n";
 }
 
+// key generation 
 void keyGen(int n, int q, int q3, int q9, int* x, int* y)
 {
 	srand(time(NULL));
+//    srand(42); // debugging purpose
 
 	int tab[3] = {0,1,q-1};
 
@@ -29,40 +39,42 @@ void keyGen(int n, int q, int q3, int q9, int* x, int* y)
 	}
 }
 
-// The decoding matrix adds unnecessary slowness
-//int** dec_matrix(int* x, int* y);
-
 // Returns the result of H*(v1, v2) without expanding matrix H = (x | y)
 void leftMultiplyByH(int n, int q, int* x, int* y, int* v1, int* v2, int* result)
 {
+	if (result==NULL)
+	{
+		cerr << "result == NULL in leftMultiplyByH\n";
+		exit(-1);
+	}
+
+	reinitialize(result, n);
+
 	/* result += x*v1 */ 
 	for (int i = 0; i < n; ++i)
 	{
 		for (int j = 0; j < n; ++j)
 		{
 			if (i<=j)  //+1
-				result[i] = (result[i] + x[(n+j-i)%n]*v1[j])%q;
+				result[i] = (result[i] + x[(n+j-i)%n]*v1[j] + y[(n+j-i)%n]*v2[j])%q;
 			else  //-1
-				result[i] = (result[i] + (q-x[(n+j-i)%n])*v1[j])%q;
+				result[i] = (result[i] + (q-x[(n+j-i)%n])*v1[j] + (q-y[(n+j-i)%n])*v2[j])%q;
 		}
 	}
 
-	/* result += y*v2 */ 
-	for (int i = 0; i < n; ++i)
-	{
-		for (int j = 0; j < n; ++j)
-		{
-			if (i<=j)  //+1
-				result[i] = (result[i] + y[(n+j-i)%n]*v2[j])%q;
-			else  //-1
-				result[i] = (result[i] + (q-y[(n+j-i)%n])*v2[j])%q;
-		}
-	}
+
+	//TODO: merge loops
 }
 
 // Returns vector a+b mod q
 void vectorAdd(int n, int q, int* a, int* b, int* result)
 {
+	if (result==NULL)
+	{
+		cerr << "result == NULL in vectorAdd\n";
+		exit(-1);
+	}
+
 	for (int i = 0; i < n; ++i)
 		result[i] = (a[i]+b[i])%q;	
 }
@@ -70,6 +82,12 @@ void vectorAdd(int n, int q, int* a, int* b, int* result)
 // Returns vector a-b mod q
 void vectorSub(int n, int q, int* a, int* b, int* result)
 {
+	if (result==NULL)
+	{
+		cerr << "result == NULL in vectorSub\n";
+		exit(-1);
+	}
+
 	for (int i = 0; i < n; ++i)
 		result[i] = (a[i]+(q-b[i]))%q;	
 }
@@ -88,9 +106,9 @@ void noiseGen(int n, int q, int* r1, int* r2, int* e)
 }
 
 // Compute the syndrome s = x*r1+y*r2+e
-int computeSyndrome(int n, int q, int* x, int* y, int* r1, int* r2, int* e, int* result)
+void computeSyndrome(int n, int q, int* x, int* y, int* r1, int* r2, int* e, int* result)
 {
-	leftMultiplyByH(n,q,x,y,r1,r2,result);
+	leftMultiplyByH(n, q, x, y, r1, r2, result);
 	vectorAdd(n, q, result, e, result);
 }
 
@@ -103,8 +121,8 @@ int test(int n, int q, int* e)
 	return 1;
 }
 
-// Test the magnitude of the coordinates
-void testR1(int n, int q, int* r1, int* r1_tmp)
+// Magnitude correction of r1
+void setR1(int n, int q, int* r1, int* r1_tmp)
 {
 	int q16, q12, q56;
 	double tmp, fracpart, intpart;
@@ -141,7 +159,8 @@ void testR1(int n, int q, int* r1, int* r1_tmp)
 	}
 }
 
-void testR2(int n, int q, int q3, int* r2, int* r2_tmp)
+// Magnitude correction of r2
+void setR2(int n, int q, int q3, int* r2, int* r2_tmp)
 {
 	int q118, q16, q518;
 	double tmp, fracpart, intpart;
@@ -189,13 +208,12 @@ int decode(int n, int q, int q3, int* x, int* y, int* syndrome, int D_thr, int* 
 		r1_tmp[i] = r2_tmp[i] = 0;
 	}
 
-	int * tmp;
 	for (int i = 0; i < D_thr; ++i)
 	{
-		testR1(n, q, p_syndrome, tmp);
-		vectorAdd(n, q, r1_tmp, tmp, r1_tmp);
-		testR2(n, q, q3, p_syndrome, tmp);
-		vectorAdd(n, q, r2_tmp, tmp, r2_tmp);
+		setR1(n, q, p_syndrome, result);
+		vectorAdd(n, q, r1_tmp, result, r1_tmp);
+		setR2(n, q, q3, p_syndrome, result);
+		vectorAdd(n, q, r2_tmp, result, r2_tmp);
 
 		for (int j = 0; j < n; ++j)
 		{
@@ -208,11 +226,9 @@ int decode(int n, int q, int q3, int* x, int* y, int* syndrome, int D_thr, int* 
 			if (r2_tmp[j] == q-2)
 				r2_tmp[j] = 1;
 		}
-		
-		// todo
-		leftMultiplyByH(n,q,x, y, r1_tmp, r2_tmp, result);
-		//int* mult = leftMultiplyByH(n,q,x, y, r1_tmp, r2_tmp);
 
+		// update syndrome 		
+		leftMultiplyByH(n,q,x, y, r1_tmp, r2_tmp, result);
 		vectorSub(n, q, syndrome, result, p_syndrome);
 
 		if (test(n, q, p_syndrome))
@@ -265,7 +281,7 @@ int main(int argc, char const *argv[])
 		q9 = (int) ceil(tmp);
 
 	// Allocating memory
-	int *x, *y, *r1, *r2, *e, *synd, *r1_tmp, *r2_tmp, *p_syndrome;
+	int *x, *y, *r1, *r2, *e, *synd, *r1_tmp, *r2_tmp, *p_syndrome, *tmp_pt;
 	if ((x = (int*)malloc(n*sizeof(int)))==NULL)
 		return -1;
 	if ((y = (int*)malloc(n*sizeof(int)))==NULL)
@@ -284,6 +300,8 @@ int main(int argc, char const *argv[])
 		return -1;
 	if ((p_syndrome = (int*)malloc(n*sizeof(int)))==NULL)
 		return -1;
+	if ((tmp_pt = (int*)malloc(n*sizeof(int)))==NULL)
+		return -1;
 
 	// main loop
 	for (int lat=0 ; lat<num_lat ; lat++)
@@ -294,11 +312,14 @@ int main(int argc, char const *argv[])
 		{
 			// Generate a new instance
 			noiseGen(n, q, r1, r2, e);
+			// Syndrome computation
 			computeSyndrome(n,q,x, y, r1, r2, e, synd);
-			decode(n, q, q3, x, y, synd, D_thr, r1_tmp, r2_tmp, p_syndrome, r1, r2, p_syndrome);
+			// Try to recover e from the syndrome and the knowledge of x and y
+			int succeed = decode(n, q, q3, x, y, synd, D_thr, r1_tmp, r2_tmp, p_syndrome, r1, r2, tmp_pt);
 
-			if (!(vectorEqual(n,e,p_syndrome)))
+			if ((succeed==-1) || !(vectorEqual(n,e,p_syndrome)))
 				nb_fail++;			
+
 			printf("Lattice n°%d\tIteration n°%d\tNumber of failure(s): %d/%d\n", lat, it, nb_fail, lat*it_p_lat+it+1);
 		}
 	}
@@ -313,5 +334,7 @@ int main(int argc, char const *argv[])
 	free(r1_tmp);
 	free(r2_tmp);
 	free(p_syndrome);
+	free(tmp_pt);
+
 	return 0;
 }
